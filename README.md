@@ -1,14 +1,89 @@
-# My API Tool
+# Simple Product Search
 
-This is a Python-based tool that fetches data from the GitHub API and displays basic information about the GitHub user "The Octocat".
+Simple Product Search is a Python-based tool that allows you to search products from Rakuten and eBay by keyword or JAN code, aggregate the results, and return unified JSON data.
 
-## Requirements
+It supports Docker and provides both CLI and API interfaces.
 
-- Docker
-- Docker Compose
+## 🚀 Features
 
-## Installation
+- 🔍 Keyword-based and JAN-code-based product search
+- 🏬 Multi-store support: Rakuten & eBay
+- 🌐 Automatic keyword translation (JP ↔ EN)
+- 🧠 Similarity-based product grouping
+- 📦 Docker & Docker Compose ready
+- ✅ Built-in test coverage with pytest
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/chottaro/simple-product-search.git
+## 🛠️ Tech Stack
+
+- Python 3.11
+- FastAPI
+- requests
+- googletrans
+- pytest + pytest-asyncio
+- Docker / Docker Compose
+
+## 📂 Project Structure
+
+```
+simple-product-search/
+├── app/
+│ ├── common/ # Enums and shared data definitions
+│ ├── search/ # Rakuten and eBay search logic
+│ ├── services/ # Utilities: translation, request, formatting
+│ ├── api.py # FastAPI entry point
+│ └── main.py # CLI entry point
+├── tests/ # Unit tests
+├── Dockerfile
+├── docker-compose.yml
+├── requirements.txt
+└── .env # (You must create this)
+```
+
+## ⚙️ Setup
+
+### 1. Clone the repository
+
+```
+git clone https://github.com/chottaro/simple-product-search.git
+cd simple-product-search
+```
+
+### 2. Prepare your .env
+Create a .env file in the root directory:
+
+```
+RAKUTEN_APP_ID=your_rakuten_app_id
+EBAY_APP_ID=your_ebay_app_id
+EBAY_CLIENT_SECRET=your_ebay_client_secret
+```
+
+### 3. Run with Docker
+```
+docker-compose up --build
+```
+
+## 🧪 Run Tests
+
+
+docker-compose exec app pytest
+## 📘 Usage
+CLI (inside container)
+```
+docker-compose exec app python -m app.main
+```
+
+API
+After running the container, access:
+
+```
+GET http://localhost:8000/search?keyword=nintendo+switch
+```
+
+## 🔐 License
+This project is licensed under the MIT License.
+You can use, modify, and distribute this code freely without requiring prior approval.
+
+## 🙏 Acknowledgements
+- Rakuten Ichiba API
+- eBay Buy API
+- googletrans for translation
