@@ -11,7 +11,7 @@ It supports Docker and provides both CLI and API interfaces.
 - 🌐 Automatic keyword translation (JP ↔ EN)
 - 🧠 Similarity-based product grouping
 - 📦 Docker & Docker Compose ready
-- ✅ Built-in test coverage with pytest
+- ✅ Built-in test with pytest
 
 ## 🛠️ Tech Stack
 
