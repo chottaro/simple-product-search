@@ -1,7 +1,10 @@
 import logging
+import traceback
 from typing import Any
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.requests import Request
+from fastapi.responses import JSONResponse
 
 from app.models.product_data import ProductItem
 from app.search.ebay import search_ebay_items
@@ -16,7 +19,7 @@ app = FastAPI()
 
 @app.get("/search")
 async def search_products(
-    keyword: str,
+    keyword: str = Query(..., min_length=1),
     search_type: int = 1,
     translate_keyword: int = 1,
     search_result_limit: int = 30,
@@ -76,6 +79,9 @@ async def search_products(
         Rakuten has priority for image_url.
     """
 
+    if not keyword.strip():
+        raise HTTPException(status_code=400, detail="The keyword is required.")
+
     option: dict[str, Any] = {
         "search_type": search_type,
         "translate_keyword": translate_keyword,
@@ -126,3 +132,12 @@ async def search_products(
     logger.info(f"Number of formatted items: {len(formated_items)}")
 
     return formated_items
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    logger.error(traceback.format_exc())
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An error occurred inside the server."},
+    )

@@ -69,7 +69,7 @@ docker-compose exec app pytest
 ## 📘 Usage
 CLI (inside container)
 ```
-docker-compose exec app python -m app.main
+docker-compose exec app python -m app.main "nintendo switch"
 ```
 
 API
