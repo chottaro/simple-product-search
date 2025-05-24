@@ -35,35 +35,6 @@ async def search_products(
 ) -> list[ProductItem]:
     """
     Search for products on Rakuten and eBay and return information grouped by JAN code or product name.
-
-     .. code-block:: json
-
-    [
-        {
-            "jan_code": "4902370548495",
-            "product_name": {
-            "rakuten": "任天堂｜Nintendo Nintendo Switch（有機ELモデル）",
-            "ebay": "Nintendo Switch White Edition"
-            },
-            "price": {
-            "rakuten": {
-                "min": 37978,
-                "max": 46500
-            },
-            "ebay": {
-                "min": 94.99,
-                "max": 600
-            }
-            },
-            "url": {
-            "rakuten": "https://item.rakuten.co.jp/example",
-            "ebay": "https://www.ebay.com/example"
-            },
-            "image_url": "https://thumbnail.image.rakuten.co.jp/example.jpg"
-        },
-        :
-    ]
-
     Args:
         keyword (str): Keywords for searching products from Rakuten and eBay.
         search_type (int): Set the search method.

@@ -12,17 +12,22 @@ type ProductItem = {
     rakuten: {
       min?: number;
       max?: number;
+      target?: number;
     };
     ebay?: {
       min?: number;
       max?: number;
+      target?: number;
     };
   };
   url: {
     rakuten?: string;
     ebay?: string;
   };
-  image_url: string;
+  image_url: {
+    rakuten?: string;
+    ebay?: string;
+  };
 };
 
 export default function Home() {
@@ -95,14 +100,21 @@ export default function Home() {
 
               <div className="mb-2">
                 {item.url.rakuten != null && (
-                  <a href={String(item.url.rakuten)} target="_blank">
-                    <img src={item.image_url} alt={item.product_name?.rakuten} width={100} className="rounded border" />
-                  </a>
+                  <div>
+                    ¥{item.price.rakuten.target.toLocaleString('ja-JP')}
+                    <a href={String(item.url.rakuten)} target="_blank">
+                      <img src={item.image_url?.rakuten} alt={item.product_name?.rakuten} width={100} className="rounded border" />
+                    </a>
+                  </div>
                 )}
+                <br />
                 {item.url.ebay != null && (
-                  <a href={String(item.url.ebay)} target="_blank">
-                    <img src={item.image_url} alt={item.product_name?.ebay} width={100} className="rounded border" />
-                  </a>
+                  <div>
+                    ${item.price.ebay.target.toLocaleString('en-US')}
+                    <a href={String(item.url.ebay)} target="_blank">
+                      <img src={item.image_url?.ebay} alt={item.product_name?.ebay} width={100} className="rounded border" />
+                    </a>
+                  </div>
                 )}
               </div>
             </div>

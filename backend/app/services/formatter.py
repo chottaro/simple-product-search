@@ -115,7 +115,9 @@ def _group_by_jan_code(
             grouped_items[jan_code]["work_price"][store.value].append(item.get("price"))
             if not grouped_items[jan_code]["product_name"][store.value]:
                 grouped_items[jan_code]["product_name"][store.value] = item.get("product_name")
+                grouped_items[jan_code]["target_price"][store.value] = item.get("price")
                 grouped_items[jan_code]["url"][store.value] = item.get("url")
+                grouped_items[jan_code]["image_url"][store.value] = item.get("image_url")
 
         else:
             grouped_items[jan_code] = {
@@ -127,11 +129,18 @@ def _group_by_jan_code(
                     "rakuten": [item.get("price")] if store == Store.RAKUTEN else [],
                     "ebay": [item.get("price")] if store == Store.EBAY else [],
                 },
+                "target_price": {
+                    "rakuten": item.get("price") if store == Store.RAKUTEN else None,
+                    "ebay": item.get("price") if store == Store.EBAY else None,
+                },
                 "url": {
                     "rakuten": item.get("url") if store == Store.RAKUTEN else None,
                     "ebay": item.get("url") if store == Store.EBAY else None,
                 },
-                "image_url": item.get("image_url"),
+                "image_url": {
+                    "rakuten": item.get("image_url") if store == Store.RAKUTEN else None,
+                    "ebay": item.get("image_url") if store == Store.EBAY else None,
+                }
             }
 
     return grouped_items
@@ -174,7 +183,9 @@ async def _group_by_product_name(
                 grouped_items[jan_code]["work_price"][store.value].append(item.get("price"))
                 if not grouped_items[jan_code]["product_name"][store.value]:
                     grouped_items[jan_code]["product_name"][store.value] = current_product_name
+                    grouped_items[jan_code]["target_price"][store.value] = item.get("price")
                     grouped_items[jan_code]["url"][store.value] = item.get("url")
+                    grouped_items[jan_code]["image_url"][store.value] = item.get("image_url")
 
                 match_flg = True
                 break
@@ -191,11 +202,18 @@ async def _group_by_product_name(
                     "rakuten": [item.get("price")] if store == Store.RAKUTEN else [],
                     "ebay": [item.get("price")] if store == Store.EBAY else [],
                 },
+                "target_price": {
+                    "rakuten": item.get("price") if store == Store.RAKUTEN else None,
+                    "ebay": item.get("price") if store == Store.EBAY else None,
+                },
                 "url": {
                     "rakuten": item.get("url") if store == Store.RAKUTEN else None,
                     "ebay": item.get("url") if store == Store.EBAY else None,
                 },
-                "image_url": item.get("image_url"),
+                "image_url": {
+                    "rakuten": item.get("image_url") if store == Store.RAKUTEN else None,
+                    "ebay": item.get("image_url") if store == Store.EBAY else None,
+                },
             }
 
     return grouped_items
@@ -260,10 +278,12 @@ def _format_grouped_items(grouped_items: dict[str, WorkProductItem]) -> list[Pro
                     "rakuten": {
                         "min": min(valid_rakuten_prices) if valid_rakuten_prices else None,
                         "max": max(valid_rakuten_prices) if valid_rakuten_prices else None,
+                        "target": item["target_price"][Store.RAKUTEN.value],
                     },
                     "ebay": {
                         "min": min(valid_ebay_prices) if valid_ebay_prices else None,
                         "max": max(valid_ebay_prices) if valid_ebay_prices else None,
+                        "target": item["target_price"][Store.EBAY.value],
                     },
                 },
                 "url": item["url"],

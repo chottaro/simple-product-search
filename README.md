@@ -63,13 +63,13 @@ docker-compose up --build
 ```
 
 ## 🧪 Run Tests
-
-
-docker-compose exec app pytest
+```
+docker-compose run --rm backend pytest
+```
 ## 📘 Usage
 CLI (inside container)
 ```
-docker-compose exec app python -m app.main "nintendo switch"
+docker-compose exec backend python -m app.main "nintendo switch"
 ```
 
 API
