@@ -5,10 +5,16 @@ import { useState } from 'react';
 type ProductItem = {
   jan_code: string;
   product_name: {
+    yahoo?: string;
     rakuten?: string;
     ebay?: string;
   };
   price: {
+    yahoo: {
+      min?: number;
+      max?: number;
+      target?: number;
+    };
     rakuten: {
       min?: number;
       max?: number;
@@ -21,10 +27,12 @@ type ProductItem = {
     };
   };
   url: {
+    yahoo?: string;
     rakuten?: string;
     ebay?: string;
   };
   image_url: {
+    yahoo?: string;
     rakuten?: string;
     ebay?: string;
   };
@@ -77,10 +85,18 @@ export default function Home() {
           results.map((item, index) => (
             <div key={index} className="border p-4 rounded shadow">              
               <div className="text-lg font-semibold mb-1">
-                {item.product_name?.rakuten ?? item.product_name?.ebay ?? 'No product name'}
+                {item.product_name?.yahoo ?? item.product_name?.rakuten ?? item.product_name?.ebay ?? 'No product name'}
               </div>
 
               <div className="mb-2">
+                {item.price.yahoo?.min != null && item.price.yahoo?.max != null && (
+                  item.price.yahoo.min === item.price.yahoo.max ? (
+                    <div>yahoo: ¥{item.price.yahoo.min.toLocaleString('ja-JP')}</div>
+                  ) : (
+                    <div>yahoo: ¥{item.price.yahoo.min.toLocaleString('ja-JP')} ～ ¥{item.price.yahoo.max.toLocaleString('ja-JP')}</div>
+                  )
+                )}
+
                 {item.price.rakuten?.min != null && item.price.rakuten?.max != null && (
                   item.price.rakuten.min === item.price.rakuten.max ? (
                     <div>rakuten: ¥{item.price.rakuten.min.toLocaleString('ja-JP')}</div>
@@ -99,6 +115,15 @@ export default function Home() {
               </div>
 
               <div className="mb-2">
+                {item.url.yahoo != null && (
+                  <div>
+                    ¥{item.price.yahoo.target.toLocaleString('ja-JP')}
+                    <a href={String(item.url.yahoo)} target="_blank">
+                      <img src={item.image_url?.yahoo} alt={item.product_name?.yahoo} width={100} className="rounded border" />
+                    </a>
+                  </div>
+                )}
+                <br />
                 {item.url.rakuten != null && (
                   <div>
                     ¥{item.price.rakuten.target.toLocaleString('ja-JP')}
