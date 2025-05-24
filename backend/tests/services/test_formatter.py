@@ -50,11 +50,14 @@ async def test_format_with_jan_code() -> None:
     assert item["product_name"]["ebay"] == "Product A"
     assert item["price"]["rakuten"]["min"] == 900
     assert item["price"]["rakuten"]["max"] == 1000
+    assert item["price"]["rakuten"]["target"] == 1000
     assert item["price"]["ebay"]["min"] == 12.12
     assert item["price"]["ebay"]["max"] == 13.13
+    assert item["price"]["ebay"]["target"] == 12.12
     assert item["url"]["rakuten"] == "https://rakuten.com/a"
     assert item["url"]["ebay"] == "https://ebay.com/a"
-    assert item["image_url"] == "https://image.com/1.jpg"
+    assert item["image_url"]["rakuten"] == "https://image.com/1.jpg"
+    assert item["image_url"]["ebay"] == "https://image.com/3.jpg"
 
 
 @pytest.mark.asyncio
@@ -116,30 +119,39 @@ async def test_format_with_product_name() -> None:
     assert item["product_name"]["ebay"] == None
     assert item["price"]["rakuten"]["min"] == 800
     assert item["price"]["rakuten"]["max"] == 800
+    assert item["price"]["rakuten"]["target"] == 800
     assert item["price"]["ebay"]["min"] == None
     assert item["price"]["ebay"]["max"] == None
+    assert item["price"]["ebay"]["target"] == None
     assert item["url"]["rakuten"] == "https://rakuten.com/c"
     assert item["url"]["ebay"] == None
-    assert item["image_url"] == "https://image.com/3.jpg"
+    assert item["image_url"]["rakuten"] == "https://image.com/3.jpg"
+    assert item["image_url"]["ebay"] == None
     item = result[1]
     assert item["jan_code"] == None
     assert item["product_name"]["rakuten"] == "商品A"
     assert item["product_name"]["ebay"] == "Product A"
     assert item["price"]["rakuten"]["min"] == 900
     assert item["price"]["rakuten"]["max"] == 1000
+    assert item["price"]["rakuten"]["target"] == 1000
     assert item["price"]["ebay"]["min"] == 12.12
     assert item["price"]["ebay"]["max"] == 13.13
+    assert item["price"]["ebay"]["target"] == 12.12
     assert item["url"]["rakuten"] == "https://rakuten.com/a"
     assert item["url"]["ebay"] == "https://ebay.com/a"
-    assert item["image_url"] == "https://image.com/1.jpg"
+    assert item["image_url"]["rakuten"] == "https://image.com/1.jpg"
+    assert item["image_url"]["ebay"] == "https://image.com/4.jpg"
     item = result[2]
     assert item["jan_code"] == None
     assert item["product_name"]["rakuten"] == None
     assert item["product_name"]["ebay"] == "other"
     assert item["price"]["rakuten"]["min"] == None
     assert item["price"]["rakuten"]["max"] == None
+    assert item["price"]["rakuten"]["target"] == None
     assert item["price"]["ebay"]["min"] == 14.14
     assert item["price"]["ebay"]["max"] == 14.14
+    assert item["price"]["ebay"]["target"] == 14.14
     assert item["url"]["rakuten"] == None
     assert item["url"]["ebay"] == "https://ebay.com/c"
-    assert item["image_url"] == "https://image.com/6.jpg"
+    assert item["image_url"]["rakuten"] == None
+    assert item["image_url"]["ebay"] == "https://image.com/6.jpg"
