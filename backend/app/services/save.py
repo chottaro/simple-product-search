@@ -17,13 +17,10 @@ def save_to_json(data: list[ProductItem], filename: str = "output.json") -> None
 
     # パスを取得
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    print(script_dir)
     # 出力先のディレクトリを指定
     output_dir = os.path.join(os.path.dirname(script_dir), "output")
-    print(output_dir)
     # 出力ファイル名のフルパスを作成
     filepath = os.path.join(output_dir, filename)
-    print(filepath)
 
     with open(filepath, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)

@@ -1,10 +1,30 @@
 services:
-  app:
-    build: .
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: simple-backend
     ports:
       - "8000:8000"
-    container_name: simple-product-search
     env_file:
-      - .env
+      - ./backend/.env
     volumes:
-      - .:/app
+      - ./backend:/app
+    networks:
+      - simple-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: simple-frontend
+    ports:
+      - "3000:3000"
+    networks:
+      - simple-network
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+
+networks:
+  simple-network:
+    driver: bridge
