@@ -2,16 +2,20 @@ import logging
 import traceback
 from typing import Any
 
+from app.models.enums import Store
+from app.models.product_data import ProductItem
+from app.search.ebay import search_ebay_items
+from app.search.rakuten import search_rakuten_items
+from app.search.yahoo import (
+    search_yahoo_items_by_jan_code,
+    search_yahoo_items_by_keyword,
+)
+from app.services.formatter import format
+from app.services.translator import translate
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.requests import Request
 from fastapi.responses import JSONResponse
-
-from app.models.product_data import ProductItem
-from app.search.ebay import search_ebay_items
-from app.search.rakuten import search_rakuten_items
-from app.services.formatter import format
-from app.services.translator import translate
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -42,7 +46,7 @@ async def search_products(
             1: Get JAN code by keyword search in Rakuten, and search Rakuten and eBay by JAN code.(Default)
 
             0: Search Rakuten and eBay by keyword.
-        translate_keyword (int): Specifies whether to perform translation if search_type is 0.
+        translate_keyword (int): Specifies whether to translate keywords.
             If you specify 1, rakuten searches in Japanese and ebay searches in English.
 
             0: Do not translate.
@@ -73,44 +77,100 @@ async def search_products(
     keyword_ja: str = translated["ja"]
     combined_keyword: str = f"{keyword_en} {keyword_ja}"
 
-    rakuten_keyword: str = keyword
+    search_keyword: str = keyword
     if translate_keyword == 1:
-        rakuten_keyword = keyword_ja
+        search_keyword = keyword_ja
     elif translate_keyword == 2:
-        rakuten_keyword = combined_keyword
+        search_keyword = combined_keyword
 
-    logger.info("Retrieving Rakuten products by keyword search ...")
-    logger.info(f"keyword: {rakuten_keyword}")
-    rakuten_items: list[dict[str, Any]] = search_rakuten_items([rakuten_keyword], option)
+    logger.info("Retrieving Yahoo products by keyword ...")
+    logger.info(f"keyword: {search_keyword}")
+    yahoo_items: list[dict[str, Any]] = search_yahoo_items_by_keyword(search_keyword, option)
+    logger.info(f"Number of items: {len(yahoo_items)}")
+
+    jan_codes: list[str] = list(set([item["jan_code"] for item in yahoo_items if item.get("jan_code")]))
+    logger.info(f"Jan codes:{jan_codes}")
+
+    keyword_map = get_keyword_map(keyword, keyword_en, keyword_ja, combined_keyword, jan_codes)
+
+    if search_type == 1:
+        logger.info("Retrieving Yahoo products by JAN code ...")
+        yahoo_items = search_yahoo_items_by_jan_code(jan_codes, option)
+        logger.info(f"Number of items: {len(yahoo_items)}")
+
+    logger.info("Retrieving Rakuten products ...")
+    rakuten_keywords: list[str] = keyword_map[Store.RAKUTEN][search_type][translate_keyword]
+    logger.info(f"keyword: {rakuten_keywords}")
+    rakuten_items = search_rakuten_items(rakuten_keywords, option)
     logger.info(f"Number of items: {len(rakuten_items)}")
 
-    if search_type == 1:
-        logger.info("Search by JAN code from Rakuten search results ...")
-        jan_codes: list[str] = list(set([item["jan_code"] for item in rakuten_items]))
-        logger.info(f"Jan codes:{jan_codes}")
-        # Janコードで再度検索
-        rakuten_items = search_rakuten_items(jan_codes, option)
-        logger.info(f"Number of items: {len(rakuten_items)}")
-
-    ebay_keywords: list[str] = [keyword]
-    if search_type == 1:
-        ebay_keywords = jan_codes
-    else:
-        if translate_keyword == 1:
-            ebay_keywords = [keyword_en]
-        elif translate_keyword == 2:
-            ebay_keywords = [combined_keyword]
-
-    logger.info("Retrieving eBay items ...")
+    logger.info("Retrieving eBay products ...")
+    ebay_keywords = keyword_map[Store.EBAY][search_type][translate_keyword]
     logger.info(f"keyword: {ebay_keywords}")
     ebay_items: list[dict[str, Any]] = search_ebay_items(ebay_keywords, option)
     logger.info(f"Number of items: {len(ebay_items)}")
 
     logger.info("Formatting product data ...")
-    formated_items: list[ProductItem] = await format(rakuten_items, ebay_items, option)
+    formated_items: list[ProductItem] = await format(yahoo_items, rakuten_items, ebay_items, option)
     logger.info(f"Number of formatted items: {len(formated_items)}")
 
     return formated_items
+
+
+def get_keyword_map(
+    keyword, keyword_en, keyword_ja, combined_keyword, jan_codes
+) -> dict[Store, dict[int, dict[int, Any]]]:
+    """
+    Define keyword mappings for each platform, search type, and translation option.
+    Args:
+        keyword (str): The original keyword.
+        keyword_en (str): Keywords translated into Japanese.
+        keyword_ja (str): Keywords translated into English.
+        combined_keyword (str): Japanese and English keywords.
+        jan_codes (Store): JAN codes.
+    Returns:
+        dict: Mapped Keywords.
+    """
+    keyword_map = {
+        Store.YAHOO: {
+            0: {
+                0: [keyword],
+                1: [keyword_ja],
+                2: [combined_keyword],
+            },
+            1: {
+                0: jan_codes,
+                1: jan_codes,
+                2: jan_codes,
+            },
+        },
+        Store.RAKUTEN: {
+            0: {
+                0: [keyword],
+                1: [keyword_ja],
+                2: [combined_keyword],
+            },
+            1: {
+                0: jan_codes,
+                1: jan_codes,
+                2: jan_codes,
+            },
+        },
+        Store.EBAY: {
+            0: {
+                0: [keyword],
+                1: [keyword_en],
+                2: [combined_keyword],
+            },
+            1: {
+                0: jan_codes,
+                1: jan_codes,
+                2: jan_codes,
+            },
+        },
+    }
+
+    return keyword_map
 
 
 @app.exception_handler(Exception)

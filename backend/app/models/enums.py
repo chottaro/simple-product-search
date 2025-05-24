@@ -10,3 +10,4 @@ class Store(Enum):
 
     EBAY = "ebay"
     RAKUTEN = "rakuten"
+    YAHOO = "yahoo"

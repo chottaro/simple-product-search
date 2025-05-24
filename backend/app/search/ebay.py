@@ -6,7 +6,6 @@ import os
 from typing import Any
 
 import requests
-
 from app.services.http_request import get_requests
 
 EBAY_APP_ID = os.getenv("EBAY_APP_ID")
@@ -96,9 +95,7 @@ def _get_access_token() -> str:
         "scope": "https://api.ebay.com/oauth/api_scope",
     }
 
-    response: Any = requests.post(
-        "https://api.ebay.com/identity/v1/oauth2/token", headers=headers, data=data
-    )
+    response: Any = requests.post("https://api.ebay.com/identity/v1/oauth2/token", headers=headers, data=data)
 
     if response.status_code == 200:
         return response.json()["access_token"]

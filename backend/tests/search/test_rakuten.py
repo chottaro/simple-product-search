@@ -67,7 +67,7 @@ def test_search_rakuten_items_keyword_exists_code(mock_get_requests: AsyncMock) 
                 "itemCaption": "テスト",
             },
             {
-                "itemName": "テスト商品 4902370548501 2",
+                "itemName": "テスト商品 49012347 2",
                 "itemPrice": 2222,
                 "itemUrl": "https://example.com/item2",
                 "mediumImageUrls": [],
@@ -79,7 +79,7 @@ def test_search_rakuten_items_keyword_exists_code(mock_get_requests: AsyncMock) 
 )
 def test_search_rakuten_jan_code_exists_code(mock_get_requests: AsyncMock) -> None:
 
-    keywords = ["mock_keyword"]
+    keywords = ["49012347"]
     option = {"search_type": 1, "search_result_limit": 2}
 
     results = rakuten.search_rakuten_items(keywords, option)
@@ -91,8 +91,8 @@ def test_search_rakuten_jan_code_exists_code(mock_get_requests: AsyncMock) -> No
     assert results[0]["price"] == 1111
     assert results[0]["url"] == "https://example.com/item1"
     assert results[0]["image_url"] == "https://example.com/49012347/image1-1.jpg"
-    assert results[1]["jan_code"] == "4902370548501"
-    assert results[1]["product_name"] == "テスト商品 4902370548501 2"
+    assert results[1]["jan_code"] == "49012347"
+    assert results[1]["product_name"] == "テスト商品 49012347 2"
     assert results[1]["price"] == 2222
     assert results[1]["url"] == "https://example.com/item2"
     assert results[1]["image_url"] == ""
@@ -143,43 +143,6 @@ def test_search_rakuten_items_keyword_not_exists_code(mock_get_requests: AsyncMo
     assert results[1]["price"] == 2222
     assert results[1]["url"] == "https://example.com/item2"
     assert results[1]["image_url"] == ""
-    assert mock_get_requests.called
-
-
-@patch(
-    "app.search.rakuten.get_requests",
-    return_value={
-        "Items": [
-            {
-                "itemName": "テスト商品 1",
-                "itemPrice": 1111,
-                "itemUrl": "https://example.com/item1",
-                "mediumImageUrls": [
-                    "https://example.com/99999999/image1-1.jpg",
-                    "https://example.com/image1-2.jpg",
-                ],
-                "itemCaption": "テスト",
-            },
-            {
-                "itemName": "テスト商品 9999999999999 2",
-                "itemPrice": 2222,
-                "itemUrl": "https://example.com/item2",
-                "mediumImageUrls": [],
-                "itemCaption": "テスト",
-            },
-        ],
-        "page": 1,
-    },
-)
-def test_search_rakuten_jan_code_not_exists_code(mock_get_requests: AsyncMock) -> None:
-
-    keywords = ["mock_keyword"]
-    option = {"search_type": 1, "search_result_limit": 2}
-
-    results = rakuten.search_rakuten_items(keywords, option)
-
-    assert isinstance(results, list)
-    assert len(results) == 0
     assert mock_get_requests.called
 
 

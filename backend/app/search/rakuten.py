@@ -26,33 +26,18 @@ def search_rakuten_items(keywords: list[str], option: dict[str, Any]) -> list[di
         list: Rakuten product search results.
     """
 
-    all_items: list[dict[str, Any]] = []
+    items: list[dict[str, Any]] = []
     for keyword in keywords:
-        keyword_items: list[dict[str, Any]] = []
-        option["page"] = 1
-        while True:
-            # 429のエラーを発生させないためにsleepを入れる(0.2だと429発生)
-            time.sleep(0.3)
+        # 429のエラーを発生させないためにsleepを入れる(0.2だと429発生)
+        time.sleep(0.3)
 
-            items: list[dict[str, Any]] = _search_once(keyword, option)
-            if len(items) == 0 or option["page"] >= 100:
-                # データが取得できなかった時点で処理終了
-                break
+        item: list[dict[str, Any]] = _search_once(keyword, option)
+        if not item:
+            continue
 
-            keyword_items.extend(items)
+        items.extend(item)
 
-            if option["search_type"] == 1:
-                # コード検索の場合はページ単位で検索しないため処理終了
-                break
-
-            if len(keyword_items) >= option["search_result_limit"]:
-                # キーワードごとに想定件数分を取得
-                keyword_items = keyword_items[0 : option["search_result_limit"]]
-                break
-
-        all_items.extend(keyword_items)
-
-    return all_items
+    return items
 
 
 def _search_once(keyword: str, option: dict[str, Any]) -> list[dict[str, Any]]:
@@ -74,13 +59,8 @@ def _search_once(keyword: str, option: dict[str, Any]) -> list[dict[str, Any]]:
         "format": "json",
         "keyword": keyword,
         "formatVersion": 2,
+        "hits": option["search_result_limit"],
     }
-    if option["search_type"] == 1:
-        # コード検索の場合は指定件数分取得
-        params["hits"] = option["search_result_limit"]
-    else:
-        # キーワード検索の場合は指定件数未満の場合が発生するのでページ単位で取得
-        params["page"] = option.get("page")
 
     data: dict[str, Any] = get_requests(url, params=params)
 
@@ -94,23 +74,14 @@ def _search_once(keyword: str, option: dict[str, Any]) -> list[dict[str, Any]]:
         image_url = item.get("mediumImageUrls")[0] if len(item.get("mediumImageUrls")) > 0 else ""
         jan_code_text_sources.append(image_url)
 
-        jan_code: str = find_jan_code(jan_code_text_sources)
-
-        if option.get("search_type") == 1 and jan_code == "":
-            # コード検索の場合はコードが取得できなかったデータはスキップ
-            continue
-
         items.append(
             {
-                "jan_code": jan_code,
+                "jan_code": keyword if option["search_type"] == 1 else find_jan_code(jan_code_text_sources),
                 "product_name": item.get("itemName"),
                 "price": item.get("itemPrice"),
                 "url": item.get("itemUrl"),
                 "image_url": image_url,
             }
         )
-
-    # 次の検索のためにページをインクリメント
-    option["page"] += 1
 
     return items

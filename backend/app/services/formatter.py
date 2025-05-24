@@ -13,6 +13,7 @@ counter: ThreadSafeCodeCounter = ThreadSafeCodeCounter()
 
 
 async def format(
+    yahoo_items: list[dict[str, Any]],
     rakuten_items: list[dict[str, Any]],
     ebay_items: list[dict[str, Any]],
     option: dict[str, Any],
@@ -28,6 +29,7 @@ async def format(
     ・search_type is other than 1 ... Translate according to the comparison target (Rakuten or eBay), compare similarity by similarity_threshold, and summarize the closest ones.
 
     Args:
+        yahoo_items (list): Yahoo search results.
         rakuten_items (list): Rakuten search results.
         ebay_items (list): eBay search results.
         option (dict): Options for grouping.
@@ -36,61 +38,34 @@ async def format(
     """
 
     # 商品データのグルーピング
-    grouped_items: dict[str, WorkProductItem] = await _group_rakuten_product_data(
-        rakuten_items, option
-    )
-    grouped_items = await _group_ebay_product_data(ebay_items, grouped_items, option)
+    grouped_items: dict[str, WorkProductItem] = await _group_product_data(yahoo_items, {}, option, Store.YAHOO)
+    grouped_items = await _group_product_data(rakuten_items, grouped_items, option, Store.RAKUTEN)
+    grouped_items = await _group_product_data(ebay_items, grouped_items, option, Store.EBAY)
 
     # 商品データを整形して返す
     return _format_grouped_items(grouped_items)
 
 
-async def _group_rakuten_product_data(
-    org_items: list[dict[str, Any]], option: dict[str, Any]
+async def _group_product_data(
+    org_items: list[dict[str, Any]], grouped_items: dict[str, WorkProductItem], option: dict[str, Any], store: Store
 ) -> dict[str, WorkProductItem]:
     """
-    Group Rakuten product data.
-
-    Args:
-        org_items (list): Rakuten search results.
-        option (dict): Options for grouping.
-    Returns:
-        dict: The combined Rakuten product data.
-    """
-
-    grouped_items: dict[str, WorkProductItem] = {}
-
-    # 楽天商品の整形(JANコードあり)
-    grouped_items = _group_by_jan_code(org_items, grouped_items, Store.RAKUTEN)
-
-    # 楽天商品の整形(JANコードなし)
-    grouped_items = await _group_by_product_name(org_items, grouped_items, Store.RAKUTEN, option)
-
-    return grouped_items
-
-
-async def _group_ebay_product_data(
-    org_items: list[dict[str, Any]],
-    grouped_items: dict[str, WorkProductItem],
-    option: dict[str, Any],
-) -> dict[str, WorkProductItem]:
-    """
-    Add eBay product data to the grouped product data.
+    Add product data to the grouped product data.
 
     Args:
         org_items (list): eBay search results.
         grouped_items (dict): Combined product data.
         option (dict): Options for grouping.
     Returns:
-        dict: Combined Rakuten and eBay product data.
+        dict: Combined product data.
     """
 
     if option["search_type"] == 1:
-        # ebay商品の整形(JANコードあり)
-        grouped_items = _group_by_jan_code(org_items, grouped_items, Store.EBAY)
+        # 商品の整形(JANコードあり)
+        grouped_items = _group_by_jan_code(org_items, grouped_items, store)
     else:
-        # ebay商品の整形(JANコードなし)
-        grouped_items = await _group_by_product_name(org_items, grouped_items, Store.EBAY, option)
+        # 商品の整形(JANコードなし)
+        grouped_items = await _group_by_product_name(org_items, grouped_items, store, option)
 
     return grouped_items
 
@@ -122,25 +97,30 @@ def _group_by_jan_code(
         else:
             grouped_items[jan_code] = {
                 "product_name": {
+                    "yahoo": item.get("product_name") if store == Store.YAHOO else None,
                     "rakuten": item.get("product_name") if store == Store.RAKUTEN else None,
                     "ebay": item.get("product_name") if store == Store.EBAY else None,
                 },
                 "work_price": {
+                    "yahoo": [item.get("price")] if store == Store.YAHOO else [],
                     "rakuten": [item.get("price")] if store == Store.RAKUTEN else [],
                     "ebay": [item.get("price")] if store == Store.EBAY else [],
                 },
                 "target_price": {
+                    "yahoo": item.get("price") if store == Store.YAHOO else None,
                     "rakuten": item.get("price") if store == Store.RAKUTEN else None,
                     "ebay": item.get("price") if store == Store.EBAY else None,
                 },
                 "url": {
+                    "yahoo": item.get("url") if store == Store.YAHOO else None,
                     "rakuten": item.get("url") if store == Store.RAKUTEN else None,
                     "ebay": item.get("url") if store == Store.EBAY else None,
                 },
                 "image_url": {
+                    "yahoo": item.get("image_url") if store == Store.YAHOO else None,
                     "rakuten": item.get("image_url") if store == Store.RAKUTEN else None,
                     "ebay": item.get("image_url") if store == Store.EBAY else None,
-                }
+                },
             }
 
     return grouped_items
@@ -164,7 +144,7 @@ async def _group_by_product_name(
         dict: Result of grouping org_items into grouped_items.
     """
 
-    for item in (item for item in org_items if not item.get("jan_code")):
+    for item in (item for item in org_items):
         current_product_name = item.get("product_name", "")
         translate_product_name = current_product_name
 
@@ -172,12 +152,13 @@ async def _group_by_product_name(
         if store == Store.EBAY:
             translate_product_name = await translate_to_japanese(current_product_name)
 
+        match_flg: bool = False
         for jan_code in grouped_items:
+            yahoo_name = grouped_items[jan_code]["product_name"][Store.YAHOO.value]
             rakuten_name = grouped_items[jan_code]["product_name"][Store.RAKUTEN.value]
             ebay_name = grouped_items[jan_code]["product_name"][Store.EBAY.value]
-            target_name = str(rakuten_name or ebay_name)
+            target_name = str(yahoo_name or rakuten_name or ebay_name)
 
-            match_flg: bool = False
             if _is_similarity(target_name, current_product_name, translate_product_name, option):
                 # ファイル名の類似度が規定値を超えた場合は同一商品とみなす
                 grouped_items[jan_code]["work_price"][store.value].append(item.get("price"))
@@ -192,25 +173,30 @@ async def _group_by_product_name(
 
         if not match_flg:
             # 1件もマッチしなかった場合は別途追加する
-            code: str = "No-" + counter.get_next()
+            code = str(item.get("jan_code") if item.get("jan_code") else "No-" + counter.get_next())
             grouped_items[code] = {
                 "product_name": {
+                    "yahoo": item.get("product_name") if store == Store.YAHOO else None,
                     "rakuten": item.get("product_name") if store == Store.RAKUTEN else None,
                     "ebay": item.get("product_name") if store == Store.EBAY else None,
                 },
                 "work_price": {
+                    "yahoo": [item.get("price")] if store == Store.YAHOO else [],
                     "rakuten": [item.get("price")] if store == Store.RAKUTEN else [],
                     "ebay": [item.get("price")] if store == Store.EBAY else [],
                 },
                 "target_price": {
+                    "yahoo": item.get("price") if store == Store.YAHOO else None,
                     "rakuten": item.get("price") if store == Store.RAKUTEN else None,
                     "ebay": item.get("price") if store == Store.EBAY else None,
                 },
                 "url": {
+                    "yahoo": item.get("url") if store == Store.YAHOO else None,
                     "rakuten": item.get("url") if store == Store.RAKUTEN else None,
                     "ebay": item.get("url") if store == Store.EBAY else None,
                 },
                 "image_url": {
+                    "yahoo": item.get("image_url") if store == Store.YAHOO else None,
                     "rakuten": item.get("image_url") if store == Store.RAKUTEN else None,
                     "ebay": item.get("image_url") if store == Store.EBAY else None,
                 },
@@ -219,9 +205,7 @@ async def _group_by_product_name(
     return grouped_items
 
 
-def _is_similarity(
-    org_text: str, target_text1: str, target_text2: str, option: dict[str, Any]
-) -> bool:
+def _is_similarity(org_text: str, target_text1: str, target_text2: str, option: dict[str, Any]) -> bool:
     """
     Check if the specified trade names are similar.
 
@@ -268,6 +252,7 @@ def _format_grouped_items(grouped_items: dict[str, WorkProductItem]) -> list[Pro
     """
     result: list[ProductItem] = []
     for jan_code, item in grouped_items.items():
+        valid_yahoo_prices = [p for p in item["work_price"][Store.YAHOO.value] if p is not None]
         valid_rakuten_prices = [p for p in item["work_price"][Store.RAKUTEN.value] if p is not None]
         valid_ebay_prices = [p for p in item["work_price"][Store.EBAY.value] if p is not None]
         result.append(
@@ -275,6 +260,11 @@ def _format_grouped_items(grouped_items: dict[str, WorkProductItem]) -> list[Pro
                 "jan_code": None if jan_code.startswith("No-") else jan_code,
                 "product_name": item["product_name"],
                 "price": {
+                    "yahoo": {
+                        "min": min(valid_yahoo_prices) if valid_yahoo_prices else None,
+                        "max": max(valid_yahoo_prices) if valid_yahoo_prices else None,
+                        "target": item["target_price"][Store.YAHOO.value],
+                    },
                     "rakuten": {
                         "min": min(valid_rakuten_prices) if valid_rakuten_prices else None,
                         "max": max(valid_rakuten_prices) if valid_rakuten_prices else None,
