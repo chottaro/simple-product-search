@@ -1,7 +1,4 @@
 import pytest
-
-from app.models.enums import Store
-from app.models.product_data import ProductItem
 from app.services import formatter
 
 

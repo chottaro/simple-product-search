@@ -1,10 +1,11 @@
 from unittest.mock import AsyncMock, Mock, patch
 
+import pytest
+from app.search import yahoo
 from requests.exceptions import HTTPError
 
-from app.search import yahoo
 
-
+@pytest.mark.asyncio
 @patch(
     "app.search.yahoo.get_requests",
     return_value={
@@ -29,12 +30,12 @@ from app.search import yahoo
         ],
     },
 )
-def test_search_yahoo_items_keyword_exists_code(mock_get_requests: AsyncMock) -> None:
+async def test_search_yahoo_items_keyword_exists_code(mock_get_requests: AsyncMock) -> None:
 
     keyword = "mock_keyword"
     option = {"search_type": 0, "search_result_limit": 2}
 
-    results = yahoo.search_yahoo_items_by_keyword(keyword, option)
+    results = await yahoo.search_yahoo_items_by_keyword(keyword, option)
 
     assert isinstance(results, list)
     assert len(results) == 2
@@ -51,6 +52,7 @@ def test_search_yahoo_items_keyword_exists_code(mock_get_requests: AsyncMock) ->
     assert mock_get_requests.called
 
 
+@pytest.mark.asyncio
 @patch(
     "app.search.yahoo.get_requests",
     return_value={
@@ -75,12 +77,12 @@ def test_search_yahoo_items_keyword_exists_code(mock_get_requests: AsyncMock) ->
         ],
     },
 )
-def test_search_yahoo_jan_code_exists_code(mock_get_requests: AsyncMock) -> None:
+async def test_search_yahoo_jan_code_exists_code(mock_get_requests: AsyncMock) -> None:
 
     keywords = ["49012347"]
     option = {"search_type": 1, "search_result_limit": 2}
 
-    results = yahoo.search_yahoo_items_by_jan_code(keywords, option)
+    results = await yahoo.search_yahoo_items_by_jan_code(keywords, option)
 
     assert isinstance(results, list)
     assert len(results) == 2
@@ -97,44 +99,47 @@ def test_search_yahoo_jan_code_exists_code(mock_get_requests: AsyncMock) -> None
     assert mock_get_requests.called
 
 
+@pytest.mark.asyncio
 @patch(
     "app.search.yahoo.get_requests",
     return_value={
         "hits": [],
     },
 )
-def test_search_yahoo_items_keyword_no_data(mock_get_requests: AsyncMock) -> None:
+async def test_search_yahoo_items_keyword_no_data(mock_get_requests: AsyncMock) -> None:
 
     keyword = "mock_keyword"
     option = {"search_type": 0, "search_result_limit": 2}
 
-    results = yahoo.search_yahoo_items_by_keyword(keyword, option)
+    results = await yahoo.search_yahoo_items_by_keyword(keyword, option)
 
     assert isinstance(results, list)
     assert len(results) == 0
     assert mock_get_requests.called
 
 
+@pytest.mark.asyncio
 @patch(
     "app.search.yahoo.get_requests",
     return_value={
         "hits": [],
     },
 )
-def ttest_search_yahoo_jan_code_no_data(mock_get_requests: AsyncMock) -> None:
+async def ttest_search_yahoo_jan_code_no_data(mock_get_requests: AsyncMock) -> None:
 
     keywords = ["9999999999999"]
     option = {"search_type": 1, "search_result_limit": 2}
 
-    results = yahoo.search_yahoo_items_by_jan_code(keywords, option)
+    results = await yahoo.search_yahoo_items_by_jan_code(keywords, option)
 
     assert isinstance(results, list)
     assert len(results) == 0
     assert mock_get_requests.called
 
 
+@pytest.mark.asyncio
 @patch("app.search.yahoo.get_requests")
-def test_search_yahoo_items_raise_exception(mock_get_requests: AsyncMock) -> None:
+async def test_search_yahoo_items_raise_exception(mock_get_requests: AsyncMock) -> None:
     mock_response = Mock()
     mock_response.raise_for_status.side_effect = HTTPError("Unauthorized")
     mock_response.get.return_value = []
@@ -143,7 +148,7 @@ def test_search_yahoo_items_raise_exception(mock_get_requests: AsyncMock) -> Non
     keywords = ["mock_keyword"]
     option = {"search_type": 1, "search_result_limit": 2}
 
-    results = yahoo._search_yahoo_items(keywords, option)
+    results = await yahoo._search_yahoo_items(keywords, option)
 
     assert isinstance(results, list)
     assert len(results) == 0

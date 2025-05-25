@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import traceback
 from typing import Any
@@ -85,7 +86,7 @@ async def search_products(
 
     logger.info("Retrieving Yahoo products by keyword ...")
     logger.info(f"keyword: {search_keyword}")
-    yahoo_items: list[dict[str, Any]] = search_yahoo_items_by_keyword(search_keyword, option)
+    yahoo_items: list[dict[str, Any]] = await search_yahoo_items_by_keyword(search_keyword, option)
     logger.info(f"Number of items: {len(yahoo_items)}")
 
     jan_codes: list[str] = list(set([item["jan_code"] for item in yahoo_items if item.get("jan_code")]))
@@ -93,28 +94,37 @@ async def search_products(
 
     keyword_map = get_keyword_map(keyword, keyword_en, keyword_ja, combined_keyword, jan_codes)
 
-    if search_type == 1:
-        logger.info("Retrieving Yahoo products by JAN code ...")
-        yahoo_items = search_yahoo_items_by_jan_code(jan_codes, option)
-        logger.info(f"Number of items: {len(yahoo_items)}")
+    async def get_async_items():
+        tasks = [
+            search_items(keyword_map, option, Store.YAHOO),
+            search_items(keyword_map, option, Store.RAKUTEN),
+            search_items(keyword_map, option, Store.EBAY),
+        ]
+        yahoo_items, rakuten_items, ebay_items = await asyncio.gather(*tasks)
+        return yahoo_items, rakuten_items, ebay_items
 
-    logger.info("Retrieving Rakuten products ...")
-    rakuten_keywords: list[str] = keyword_map[Store.RAKUTEN][search_type][translate_keyword]
-    logger.info(f"keyword: {rakuten_keywords}")
-    rakuten_items = search_rakuten_items(rakuten_keywords, option)
-    logger.info(f"Number of items: {len(rakuten_items)}")
-
-    logger.info("Retrieving eBay products ...")
-    ebay_keywords = keyword_map[Store.EBAY][search_type][translate_keyword]
-    logger.info(f"keyword: {ebay_keywords}")
-    ebay_items: list[dict[str, Any]] = search_ebay_items(ebay_keywords, option)
-    logger.info(f"Number of items: {len(ebay_items)}")
+    yahoo_items, rakuten_items, ebay_items = await get_async_items()
 
     logger.info("Formatting product data ...")
     formated_items: list[ProductItem] = await format(yahoo_items, rakuten_items, ebay_items, option)
     logger.info(f"Number of formatted items: {len(formated_items)}")
 
     return formated_items
+
+
+async def search_items(keyword_map, option, store: Store) -> list[dict[str, Any]]:
+    logger.info(f"Retrieving {store.value} products ...")
+    keywords: list[str] = keyword_map[store][option["search_type"]][option["translate_keyword"]]
+    items: list[dict[str, Any]] = []
+    if store == Store.YAHOO:
+        items = await search_yahoo_items_by_jan_code(keywords, option)
+    elif store == Store.RAKUTEN:
+        items = await search_rakuten_items(keywords, option)
+    elif store == Store.EBAY:
+        items = await search_ebay_items(keywords, option)
+    logger.info(f"Number of items in {store.value}: {len(items)}")
+
+    return items
 
 
 def get_keyword_map(

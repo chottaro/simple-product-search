@@ -5,7 +5,7 @@ from typing import Any
 import requests
 
 
-def get_requests(url: str, headers: dict[str, str] = {}, params: dict[str, Any] = {}) -> Any:
+async def get_requests(url: str, headers: dict[str, str] = {}, params: dict[str, Any] = {}) -> Any:
     """
     Send a GET request with the specified URL and parameters.
 

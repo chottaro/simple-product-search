@@ -1,10 +1,11 @@
 from unittest.mock import AsyncMock, Mock, patch
 
+import pytest
+from app.search import ebay
 from requests.exceptions import HTTPError
 
-from app.search import ebay
 
-
+@pytest.mark.asyncio
 @patch("app.search.ebay._get_access_token", return_value="dummy_token")
 @patch(
     "app.search.ebay.get_requests",
@@ -29,12 +30,12 @@ from app.search import ebay
         ]
     },
 )
-def test_search_ebay_items_keyword(mock_get_requests: AsyncMock, mock_get_token: AsyncMock) -> None:
+async def test_search_ebay_items_keyword(mock_get_requests: AsyncMock, mock_get_token: AsyncMock) -> None:
 
     keywords = ["mock_keyword"]
     option = {"search_type": 0, "search_result_limit": 10}
 
-    results = ebay.search_ebay_items(keywords, option)
+    results = await ebay.search_ebay_items(keywords, option)
 
     assert isinstance(results, list)
     assert len(results) == 2
@@ -52,6 +53,7 @@ def test_search_ebay_items_keyword(mock_get_requests: AsyncMock, mock_get_token:
     assert mock_get_token.called
 
 
+@pytest.mark.asyncio
 @patch("app.search.ebay._get_access_token", return_value="dummy_token")
 @patch(
     "app.search.ebay.get_requests",
@@ -76,14 +78,12 @@ def test_search_ebay_items_keyword(mock_get_requests: AsyncMock, mock_get_token:
         ]
     },
 )
-def test_search_ebay_items_jan_code(
-    mock_get_requests: AsyncMock, mock_get_token: AsyncMock
-) -> None:
+async def test_search_ebay_items_jan_code(mock_get_requests: AsyncMock, mock_get_token: AsyncMock) -> None:
 
     keywords = ["4902370550733"]
     option = {"search_type": 1, "search_result_limit": 10}
 
-    results = ebay.search_ebay_items(keywords, option)
+    results = await ebay.search_ebay_items(keywords, option)
 
     assert isinstance(results, list)
     assert len(results) == 2
@@ -101,17 +101,18 @@ def test_search_ebay_items_jan_code(
     assert mock_get_token.called
 
 
+@pytest.mark.asyncio
 @patch("app.search.ebay._get_access_token", return_value="dummy_token")
 @patch(
     "app.search.ebay.get_requests",
     return_value={},
 )
-def test_search_ebay_items_no_data(mock_get_requests: AsyncMock, mock_get_token: AsyncMock) -> None:
+async def test_search_ebay_items_no_data(mock_get_requests: AsyncMock, mock_get_token: AsyncMock) -> None:
 
     keywords = ["9999999999999"]
     option = {"search_type": 1, "search_result_limit": 10}
 
-    results = ebay.search_ebay_items(keywords, option)
+    results = await ebay.search_ebay_items(keywords, option)
 
     assert isinstance(results, list)
     assert len(results) == 0
@@ -119,11 +120,10 @@ def test_search_ebay_items_no_data(mock_get_requests: AsyncMock, mock_get_token:
     assert mock_get_token.called
 
 
+@pytest.mark.asyncio
 @patch("app.search.ebay._get_access_token", return_value="dummy_token")
 @patch("app.search.ebay.get_requests")
-def test_search_ebay_items_raise_exception(
-    mock_get_requests: AsyncMock, mock_get_token: AsyncMock
-) -> None:
+async def test_search_ebay_items_raise_exception(mock_get_requests: AsyncMock, mock_get_token: AsyncMock) -> None:
     mock_response = Mock()
     mock_response.raise_for_status.side_effect = HTTPError("Unauthorized")
     mock_response.get.return_value = []
@@ -132,7 +132,7 @@ def test_search_ebay_items_raise_exception(
     keywords = ["9999999999999"]
     option = {"search_type": 1, "search_result_limit": 10}
 
-    results = ebay.search_ebay_items(keywords, option)
+    results = await ebay.search_ebay_items(keywords, option)
 
     assert isinstance(results, list)
     assert len(results) == 0

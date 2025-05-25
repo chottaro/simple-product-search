@@ -1,10 +1,11 @@
 # search/yahoo.py
 
+import asyncio
 import logging
 import os
-import time
 from typing import Any
 
+import httpx
 from app.services.http_request import get_requests
 
 YAHOO_APP_ID = os.getenv("YAHOO_APP_ID")
@@ -13,7 +14,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def search_yahoo_items_by_keyword(keyword: str, option: dict[str, Any]) -> list[dict[str, Any]]:
+async def search_yahoo_items_by_keyword(keyword: str, option: dict[str, Any]) -> list[dict[str, Any]]:
     """
     Search Yahoo products by keyword.
 
@@ -27,10 +28,10 @@ def search_yahoo_items_by_keyword(keyword: str, option: dict[str, Any]) -> list[
     # 強制的にキーワード検索を行う
     option_for_keyword = option.copy()
     option_for_keyword["search_type"] = 0
-    return _search_yahoo_items([keyword], option_for_keyword)
+    return await _search_yahoo_items([keyword], option_for_keyword)
 
 
-def search_yahoo_items_by_jan_code(jan_codes: list[str], option: dict[str, Any]) -> list[dict[str, Any]]:
+async def search_yahoo_items_by_jan_code(jan_codes: list[str], option: dict[str, Any]) -> list[dict[str, Any]]:
     """
     Search Yahoo products by JAN code.
 
@@ -40,10 +41,10 @@ def search_yahoo_items_by_jan_code(jan_codes: list[str], option: dict[str, Any])
     Returns:
         list: Yahoo product search results.
     """
-    return _search_yahoo_items(jan_codes, option)
+    return await _search_yahoo_items(jan_codes, option)
 
 
-def _search_yahoo_items(keywords: list[str], option: dict[str, Any]) -> list[dict[str, Any]]:
+async def _search_yahoo_items(keywords: list[str], option: dict[str, Any]) -> list[dict[str, Any]]:
     """
     Search Yahoo products.
 
@@ -55,52 +56,46 @@ def _search_yahoo_items(keywords: list[str], option: dict[str, Any]) -> list[dic
     """
 
     items: list[dict[str, Any]] = []
-    for keyword in keywords:
-        # 429のエラーを発生させないためにsleepを入れる(0.4だと429発生)
-        time.sleep(0.5)
+    async with httpx.AsyncClient() as client:
+        search_url: str = "https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch"
+        search_params: dict[str, Any] = {
+            "appid": YAHOO_APP_ID,
+            "results": option["search_result_limit"],
+        }
 
-        item: list[dict[str, Any]] = _search_once(keyword, option)
-        if not item:
-            continue
+        for keyword in keywords:
+            try:
+                # 429のエラーを発生させないためにsleepを入れる(0.5だと429発生)
+                await asyncio.sleep(0.6)
 
-        items.extend(item)
+                if option["search_type"] == 1:
+                    search_params["jan_code"] = keyword
+                else:
+                    search_params["query"] = keyword
 
-    return items
+                data: dict[str, Any] = await get_requests(search_url, params=search_params)
 
-
-def _search_once(keyword: str, option: dict[str, Any]) -> list[dict[str, Any]]:
-    """
-    The number of product data items corresponding to search_result_limit is acquired.
-
-    Args:
-        keyword (str): Search keyword or jan code.
-        token (str): Tokens required by Yahoo's API.
-        option (dict): Options for Searching.
-    Returns:
-        list: Yahoo product search results.
-    """
-
-    search_url: str = "https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch"
-    search_params: dict[str, Any] = {
-        "appid": YAHOO_APP_ID,
-        "results": option["search_result_limit"],
-    }
-    if option["search_type"] == 1:
-        search_params["jan_code"] = keyword
-    else:
-        search_params["query"] = keyword
-
-    data: dict[str, Any] = get_requests(search_url, params=search_params)
-    items: list[dict[str, Any]] = []
-    for item in data.get("hits", []):
-        items.append(
-            {
-                "jan_code": item.get("janCode"),
-                "product_name": item.get("name"),
-                "price": float(item.get("price")),
-                "url": item.get("url"),
-                "image_url": item.get("image", {}).get("medium"),
-            }
-        )
+                items.extend(parse_item(data))
+            except httpx.HTTPStatusError as e:
+                logger.warning(f"Yahoo request failed for {keyword}: {e}")
 
     return items
+
+
+def parse_item(data: dict[str, Any]) -> list[dict[str, Any]]:
+    try:
+        items: list[dict[str, Any]] = []
+        for item in data.get("hits", []):
+            items.append(
+                {
+                    "jan_code": item.get("janCode"),
+                    "product_name": item.get("name"),
+                    "price": float(item.get("price")),
+                    "url": item.get("url"),
+                    "image_url": item.get("image", {}).get("medium"),
+                }
+            )
+        return items
+    except (KeyError, TypeError, ValueError) as e:
+        logger.warning(f"Failed to parse item: {e}")
+        return []

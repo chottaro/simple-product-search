@@ -5,6 +5,7 @@ import logging
 import os
 from typing import Any
 
+import httpx
 import requests
 from app.services.http_request import get_requests
 
@@ -15,7 +16,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def search_ebay_items(keywords: list[str], option: dict[str, Any]) -> list[dict[str, Any]]:
+async def search_ebay_items(keywords: list[str], option: dict[str, Any]) -> list[dict[str, Any]]:
     """
     Search eBay products.
 
@@ -25,54 +26,51 @@ def search_ebay_items(keywords: list[str], option: dict[str, Any]) -> list[dict[
     Returns:
         list: eBay product search results.
     """
+
     token: str = _get_access_token()
     if not token:
         logger.info("eBayトークン取得失敗")
         return []
 
     items: list[dict[str, Any]] = []
-    for keyword in keywords:
-        item: list[dict[str, Any]] = _search_once(keyword, token, option)
-        if not item:
-            continue
+    async with httpx.AsyncClient() as client:
+        search_url: str = "https://api.ebay.com/buy/browse/v1/item_summary/search"
+        headers: dict[str, str] = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        }
+        search_params: dict[str, Any] = {"limit": option["search_result_limit"]}
 
-        items.extend(item)
+        for keyword in keywords:
+            try:
+                search_params["q"] = keyword
 
-    return items
+                data: dict[str, Any] = await get_requests(search_url, headers, search_params)
 
-
-def _search_once(keyword: str, token: str, option: dict[str, Any]) -> list[dict[str, Any]]:
-    """
-    The number of product data items corresponding to search_result_limit is acquired.
-
-    Args:
-        keyword (str): Search keyword or jan code.
-        token (str): Tokens required by ebay's API.
-        option (dict): Options for Searching.
-    Returns:
-        list: eBay product search results.
-    """
-
-    search_url: str = "https://api.ebay.com/buy/browse/v1/item_summary/search"
-    headers: dict[str, str] = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json",
-    }
-    search_params: dict[str, Any] = {"q": keyword, "limit": option["search_result_limit"]}
-    data: dict[str, Any] = get_requests(search_url, headers, search_params)
-    items: list[dict[str, Any]] = []
-    for item in data.get("itemSummaries", []):
-        items.append(
-            {
-                "jan_code": keyword if option["search_type"] == 1 else "",
-                "product_name": item.get("title"),
-                "price": float(item.get("price", {}).get("value", 0)),
-                "url": item.get("itemWebUrl"),
-                "image_url": item.get("image", {}).get("imageUrl"),
-            }
-        )
+                items.extend(parse_item(keyword, option["search_type"], data))
+            except httpx.HTTPStatusError as e:
+                logger.warning(f"eBay request failed for {keyword}: {e}")
 
     return items
+
+
+def parse_item(keyword: str, search_type: int, data: dict[str, Any]) -> list[dict[str, Any]]:
+    try:
+        items: list[dict[str, Any]] = []
+        for item in data.get("itemSummaries", []):
+            items.append(
+                {
+                    "jan_code": keyword if search_type == 1 else "",
+                    "product_name": item.get("title"),
+                    "price": float(item.get("price", {}).get("value", 0)),
+                    "url": item.get("itemWebUrl"),
+                    "image_url": item.get("image", {}).get("imageUrl"),
+                }
+            )
+        return items
+    except (KeyError, TypeError, ValueError) as e:
+        logger.warning(f"Failed to parse item: {e}")
+        return []
 
 
 def _get_access_token() -> str:

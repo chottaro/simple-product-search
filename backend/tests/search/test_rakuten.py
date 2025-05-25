@@ -1,10 +1,11 @@
 from unittest.mock import AsyncMock, Mock, patch
 
+import pytest
+from app.search import rakuten
 from requests.exceptions import HTTPError
 
-from app.search import rakuten
 
-
+@pytest.mark.asyncio
 @patch(
     "app.search.rakuten.get_requests",
     return_value={
@@ -30,12 +31,12 @@ from app.search import rakuten
         "page": 1,
     },
 )
-def test_search_rakuten_items_keyword_exists_code(mock_get_requests: AsyncMock) -> None:
+async def test_search_rakuten_items_keyword_exists_code(mock_get_requests: AsyncMock) -> None:
 
     keywords = ["mock_keyword"]
     option = {"search_type": 0, "search_result_limit": 2}
 
-    results = rakuten.search_rakuten_items(keywords, option)
+    results = await rakuten.search_rakuten_items(keywords, option)
 
     assert isinstance(results, list)
     assert len(results) == 2
@@ -52,6 +53,7 @@ def test_search_rakuten_items_keyword_exists_code(mock_get_requests: AsyncMock) 
     assert mock_get_requests.called
 
 
+@pytest.mark.asyncio
 @patch(
     "app.search.rakuten.get_requests",
     return_value={
@@ -77,12 +79,12 @@ def test_search_rakuten_items_keyword_exists_code(mock_get_requests: AsyncMock) 
         "page": 1,
     },
 )
-def test_search_rakuten_jan_code_exists_code(mock_get_requests: AsyncMock) -> None:
+async def test_search_rakuten_jan_code_exists_code(mock_get_requests: AsyncMock) -> None:
 
     keywords = ["49012347"]
     option = {"search_type": 1, "search_result_limit": 2}
 
-    results = rakuten.search_rakuten_items(keywords, option)
+    results = await rakuten.search_rakuten_items(keywords, option)
 
     assert isinstance(results, list)
     assert len(results) == 2
@@ -99,6 +101,7 @@ def test_search_rakuten_jan_code_exists_code(mock_get_requests: AsyncMock) -> No
     assert mock_get_requests.called
 
 
+@pytest.mark.asyncio
 @patch(
     "app.search.rakuten.get_requests",
     return_value={
@@ -124,12 +127,12 @@ def test_search_rakuten_jan_code_exists_code(mock_get_requests: AsyncMock) -> No
         "page": 1,
     },
 )
-def test_search_rakuten_items_keyword_not_exists_code(mock_get_requests: AsyncMock) -> None:
+async def test_search_rakuten_items_keyword_not_exists_code(mock_get_requests: AsyncMock) -> None:
 
     keywords = ["mock_keyword"]
     option = {"search_type": 0, "search_result_limit": 2}
 
-    results = rakuten.search_rakuten_items(keywords, option)
+    results = await rakuten.search_rakuten_items(keywords, option)
 
     assert isinstance(results, list)
     assert len(results) == 2
@@ -146,6 +149,7 @@ def test_search_rakuten_items_keyword_not_exists_code(mock_get_requests: AsyncMo
     assert mock_get_requests.called
 
 
+@pytest.mark.asyncio
 @patch(
     "app.search.rakuten.get_requests",
     return_value={
@@ -153,20 +157,21 @@ def test_search_rakuten_items_keyword_not_exists_code(mock_get_requests: AsyncMo
         "page": 1,
     },
 )
-def test_search_rakuten_no_data(mock_get_requests: AsyncMock) -> None:
+async def test_search_rakuten_no_data(mock_get_requests: AsyncMock) -> None:
 
     keywords = ["mock_keyword"]
     option = {"search_type": 1, "search_result_limit": 2}
 
-    results = rakuten.search_rakuten_items(keywords, option)
+    results = await rakuten.search_rakuten_items(keywords, option)
 
     assert isinstance(results, list)
     assert len(results) == 0
     assert mock_get_requests.called
 
 
+@pytest.mark.asyncio
 @patch("app.search.rakuten.get_requests")
-def test_search_rakuten_items_raise_exception(mock_get_requests: AsyncMock) -> None:
+async def test_search_rakuten_items_raise_exception(mock_get_requests: AsyncMock) -> None:
     mock_response = Mock()
     mock_response.raise_for_status.side_effect = HTTPError("Unauthorized")
     mock_response.get.return_value = []
@@ -175,7 +180,7 @@ def test_search_rakuten_items_raise_exception(mock_get_requests: AsyncMock) -> N
     keywords = ["mock_keyword"]
     option = {"search_type": 1, "search_result_limit": 2}
 
-    results = rakuten.search_rakuten_items(keywords, option)
+    results = await rakuten.search_rakuten_items(keywords, option)
 
     assert isinstance(results, list)
     assert len(results) == 0
