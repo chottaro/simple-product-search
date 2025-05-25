@@ -1,45 +1,52 @@
 # Simple Product Search
 
-Simple Product Search is a Python-based tool that allows you to search products from Rakuten and eBay by keyword or JAN code, aggregate the results, and return unified JSON data.
-
-It supports Docker and provides both CLI and API interfaces.
+A web application that allows you to search for products across multiple e-commerce platforms — Yahoo Shopping, Rakuten, and eBay — using keywords or JAN codes. It displays the lowest and highest prices along with product images side-by-side for easy comparison.
 
 ## 🚀 Features
 
-- 🔍 Keyword-based and JAN-code-based product search
-- 🏬 Multi-store support: Rakuten & eBay
-- 🌐 Automatic keyword translation (JP ↔ EN)
-- 🧠 Similarity-based product grouping
-- 📦 Docker & Docker Compose ready
-- ✅ Built-in test with pytest
+- 🔍 **Keyword or JAN Code Search**
+  - Search products using a keyword or JAN (Japanese Article Number) code.
+- 🏬 **Multi-store Integration**
+  - Aggregates product data from Yahoo, Rakuten, and eBay.
+- 🌐 **Automatic keyword translation (JP ↔ EN)**
+- ⚡ **Asynchronous Backend Processing**
+  - API requests are made concurrently to speed up search results.
+- 🖼️ **Side-by-side Product Display**
+  - Images and price ranges are displayed horizontally per store per product.
+- 📊 **Result Count Display**
+  - Shows the number of product results after each search.
+- 📦 **Docker & Docker Compose ready**
+- ✅ **Built-in test with pytest**
 
 ## 🛠️ Tech Stack
 
-- Python 3.11
-- FastAPI
-- requests
-- googletrans
-- pytest + pytest-asyncio
-- Docker / Docker Compose
+| Layer  | Technology |
+| ------------- | ------------- |
+| Frontend  | Next.js, TypeScript, Tailwind CSS  |
+| Backend | Python 3.11, FastAPI, requests, googletrans, pytest + pytest-asyncio  |
+| Containerization  | Docker, Docker Compose  |
 
 ## 📂 Project Structure
 
 ```
 simple-product-search/
-├── app/
-│ ├── common/ # Enums and shared data definitions
-│ ├── search/ # Rakuten and eBay search logic
-│ ├── services/ # Utilities: translation, request, formatting
-│ ├── api.py # FastAPI entry point
-│ └── main.py # CLI entry point
-├── tests/ # Unit tests
-├── Dockerfile
-├── docker-compose.yml
-├── requirements.txt
-└── .env # (You must create this)
+├── backend/              # FastAPI backend
+│   ├── app/
+│   │   ├── api.py        # Main API endpoint
+│   │   ├── main.py       # CLI entry point
+│   │   ├── services/     # Logic for Yahoo, Rakuten, eBay
+│   ├── .env              # (You must create this)
+│   └── ...
+├── frontend/             # Next.js frontend
+│   ├── app/
+│   │   └── page.tsx      # Main search UI
+│   ├── public/
+│   └── ...
+├── docker-compose.yml    # Container orchestration
+└── ...
 ```
 
-## ⚙️ Setup
+## ⚙️ Getting Started
 
 ### 1. Clone the repository
 
@@ -49,7 +56,7 @@ cd simple-product-search
 ```
 
 ### 2. Prepare your .env
-Create a .env file in the root directory:
+Create a `.env` file in the backend directory:
 
 ```
 YAHOO_APP_ID=your_yahoo_client_id
@@ -68,23 +75,26 @@ docker-compose up --build
 docker-compose run --rm backend pytest
 ```
 ## 📘 Usage
+Browser
+```
+http://localhost:3000
+```
+
+API
+```
+GET http://localhost:8000/search?keyword=nintendo+switch
+```
+
 CLI (inside container)
 ```
 docker-compose exec backend python -m app.main "nintendo switch"
 ```
 
-API
-After running the container, access:
-
-```
-GET http://localhost:8000/search?keyword=nintendo+switch
-```
-
 ## 🔐 License
 This project is licensed under the MIT License.
-You can use, modify, and distribute this code freely without requiring prior approval.
 
 ## 🙏 Acknowledgements
+- Yahoo API
 - Rakuten Ichiba API
 - eBay Buy API
 - googletrans for translation
