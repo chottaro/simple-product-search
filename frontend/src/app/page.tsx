@@ -53,8 +53,7 @@ export default function Home() {
       : "https://simple-product-search-pvuh.onrender.com";
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      const res = await fetch(`${apiUrl}/search?keyword=${encodeURIComponent(keyword)}`);
+      const res = await fetch(`${baseUrl}/search?keyword=${encodeURIComponent(keyword)}`);
       const data = await res.json();
       setResults(data);
     } catch (err) {
