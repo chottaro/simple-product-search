@@ -52,6 +52,7 @@ cd simple-product-search
 Create a .env file in the root directory:
 
 ```
+YAHOO_APP_ID=your_yahoo_client_id
 RAKUTEN_APP_ID=your_rakuten_app_id
 EBAY_APP_ID=your_ebay_app_id
 EBAY_CLIENT_SECRET=your_ebay_client_secret
