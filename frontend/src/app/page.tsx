@@ -47,6 +47,11 @@ export default function Home() {
     if (!keyword) return;
 
     setLoading(true);
+
+    const baseUrl = process.env.NODE_ENV === "development"
+      ? process.env.NEXT_PUBLIC_API_URL
+      : "https://simple-product-search-pvuh.onrender.com";
+
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       const res = await fetch(`${apiUrl}/search?keyword=${encodeURIComponent(keyword)}`);
