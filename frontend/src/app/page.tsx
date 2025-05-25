@@ -66,81 +66,81 @@ export default function Home() {
           type="text"
           value={keyword}
           onChange={(e) => setKeyword(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleSearch();
+          }}
           placeholder="Enter keyword"
           className="border px-4 py-2 w-full"
+          disabled={loading}
         />
         <button
           onClick={handleSearch}
-          className="bg-blue-600 text-white px-4 py-2 rounded"
+          disabled={loading}
+          className={`bg-blue-500 text-white px-4 py-2 rounded ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
         >
           Search
         </button>
       </div>
 
-      {loading && <p>Loading ...</p>}
+      {loading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="text-white text-xl">Loading ...</div>
+        </div>
+    )}
+
+      {results.length > 0 && (
+        <p className="mt-4 text-gray-700">{results.length} hits</p>
+      )}
 
       {results.length > 0 && (
         <ul className="space-y-4">
         {
           results.map((item, index) => (
-            <div key={index} className="border p-4 rounded shadow">              
-              <div className="text-lg font-semibold mb-1">
-                {item.product_name?.yahoo ?? item.product_name?.rakuten ?? item.product_name?.ebay ?? 'No product name'}
-              </div>
+            <div key={index} className="border p-4 rounded shadow">
+              <p className="font-bold mb-2">{item.product_name?.yahoo ?? item.product_name?.rakuten ?? item.product_name?.ebay ?? 'No product name'}</p>
+              <div className="flex space-x-4">
+                {['yahoo', 'rakuten', 'ebay'].map((store) => {
+                  const url = item.url[store];
+                  const imageUrl = item.image_url[store];
+                  const price = item.price[store];
+                  const min_price = price?.min;
+                  const max_price = price?.max;
 
-              <div className="mb-2">
-                {item.price.yahoo?.min != null && item.price.yahoo?.max != null && (
-                  item.price.yahoo.min === item.price.yahoo.max ? (
-                    <div>yahoo: ¥{item.price.yahoo.min.toLocaleString('ja-JP')}</div>
-                  ) : (
-                    <div>yahoo: ¥{item.price.yahoo.min.toLocaleString('ja-JP')} ～ ¥{item.price.yahoo.max.toLocaleString('ja-JP')}</div>
-                  )
-                )}
+                  let currencySymbol = "";
+                  let locale = "";
 
-                {item.price.rakuten?.min != null && item.price.rakuten?.max != null && (
-                  item.price.rakuten.min === item.price.rakuten.max ? (
-                    <div>rakuten: ¥{item.price.rakuten.min.toLocaleString('ja-JP')}</div>
-                  ) : (
-                    <div>rakuten: ¥{item.price.rakuten.min.toLocaleString('ja-JP')} ～ ¥{item.price.rakuten.max.toLocaleString('ja-JP')}</div>
-                  )
-                )}
+                  if (store === "ebay") {
+                    currencySymbol = "$";
+                    locale = "en-US";
+                  } else {
+                    currencySymbol = "¥";
+                    locale = "ja-JP";
+                  }
 
-                {item.price.ebay?.min != null && item.price.ebay?.max != null && (
-                  item.price.ebay.min === item.price.ebay.max ? (
-                    <div>eBay: ${item.price.ebay.min.toLocaleString('en-US')}</div>
-                  ) : (
-                    <div>eBay: ${item.price.ebay.min.toLocaleString('en-US')} ～ ${item.price.ebay.max.toLocaleString('en-US')}</div>
-                  )
-                )}
-              </div>
-
-              <div className="mb-2">
-                {item.url.yahoo != null && (
-                  <div>
-                    ¥{item.price.yahoo.target.toLocaleString('ja-JP')}
-                    <a href={String(item.url.yahoo)} target="_blank">
-                      <img src={item.image_url?.yahoo} alt={item.product_name?.yahoo} width={100} className="rounded border" />
-                    </a>
-                  </div>
-                )}
-                <br />
-                {item.url.rakuten != null && (
-                  <div>
-                    ¥{item.price.rakuten.target.toLocaleString('ja-JP')}
-                    <a href={String(item.url.rakuten)} target="_blank">
-                      <img src={item.image_url?.rakuten} alt={item.product_name?.rakuten} width={100} className="rounded border" />
-                    </a>
-                  </div>
-                )}
-                <br />
-                {item.url.ebay != null && (
-                  <div>
-                    ${item.price.ebay.target.toLocaleString('en-US')}
-                    <a href={String(item.url.ebay)} target="_blank">
-                      <img src={item.image_url?.ebay} alt={item.product_name?.ebay} width={100} className="rounded border" />
-                    </a>
-                  </div>
-                )}
+                  return (
+                    <div key={store} className="w-full text-center">
+                      <div className="mb-1 text-sm">
+                        <span className="font-semibold capitalize">{store}</span>:{" "}
+                        {min_price && max_price
+                          ? `${currencySymbol}${min_price.toLocaleString(locale)} ～ ${currencySymbol}${max_price.toLocaleString(locale)}`
+                          : "No Data."}
+                      </div>
+                      {url && imageUrl ? (
+                        <a href={url} target="_blank" rel="noopener noreferrer">
+                          <img
+                            src={imageUrl}
+                            alt={`${store} image`}
+                            className="w-24 h-24 object-contain mx-auto border"
+                          />
+                        </a>
+                      ) : (
+                        <div className="w-24 h-24 flex items-center justify-center border mx-auto text-xs text-gray-400">
+                          No Image
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ))
