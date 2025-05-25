@@ -1,6 +1,7 @@
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
+from app.models.enums import SearchType
 from app.search import yahoo
 from requests.exceptions import HTTPError
 
@@ -33,7 +34,7 @@ from requests.exceptions import HTTPError
 async def test_search_yahoo_items_keyword_exists_code(mock_get_requests: AsyncMock) -> None:
 
     keyword = "mock_keyword"
-    option = {"search_type": 0, "search_result_limit": 2}
+    option = {"search_type": SearchType.KEYWORD, "search_result_limit": 2}
 
     results = await yahoo.search_yahoo_items_by_keyword(keyword, option)
 
@@ -80,7 +81,7 @@ async def test_search_yahoo_items_keyword_exists_code(mock_get_requests: AsyncMo
 async def test_search_yahoo_jan_code_exists_code(mock_get_requests: AsyncMock) -> None:
 
     keywords = ["49012347"]
-    option = {"search_type": 1, "search_result_limit": 2}
+    option = {"search_type": SearchType.JAN_CODE, "search_result_limit": 2}
 
     results = await yahoo.search_yahoo_items_by_jan_code(keywords, option)
 
@@ -109,7 +110,7 @@ async def test_search_yahoo_jan_code_exists_code(mock_get_requests: AsyncMock) -
 async def test_search_yahoo_items_keyword_no_data(mock_get_requests: AsyncMock) -> None:
 
     keyword = "mock_keyword"
-    option = {"search_type": 0, "search_result_limit": 2}
+    option = {"search_type": SearchType.KEYWORD, "search_result_limit": 2}
 
     results = await yahoo.search_yahoo_items_by_keyword(keyword, option)
 
@@ -128,7 +129,7 @@ async def test_search_yahoo_items_keyword_no_data(mock_get_requests: AsyncMock) 
 async def ttest_search_yahoo_jan_code_no_data(mock_get_requests: AsyncMock) -> None:
 
     keywords = ["9999999999999"]
-    option = {"search_type": 1, "search_result_limit": 2}
+    option = {"search_type": SearchType.JAN_CODE, "search_result_limit": 2}
 
     results = await yahoo.search_yahoo_items_by_jan_code(keywords, option)
 
@@ -146,7 +147,7 @@ async def test_search_yahoo_items_raise_exception(mock_get_requests: AsyncMock) 
     mock_get_requests.return_value = mock_response
 
     keywords = ["mock_keyword"]
-    option = {"search_type": 1, "search_result_limit": 2}
+    option = {"search_type": SearchType.JAN_CODE, "search_result_limit": 2}
 
     results = await yahoo._search_yahoo_items(keywords, option)
 

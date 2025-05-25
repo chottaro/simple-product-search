@@ -1,6 +1,7 @@
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
+from app.models.enums import SearchType
 from app.search import ebay
 from requests.exceptions import HTTPError
 
@@ -33,7 +34,7 @@ from requests.exceptions import HTTPError
 async def test_search_ebay_items_keyword(mock_get_requests: AsyncMock, mock_get_token: AsyncMock) -> None:
 
     keywords = ["mock_keyword"]
-    option = {"search_type": 0, "search_result_limit": 10}
+    option = {"search_type": SearchType.KEYWORD, "search_result_limit": 10}
 
     results = await ebay.search_ebay_items(keywords, option)
 
@@ -81,7 +82,7 @@ async def test_search_ebay_items_keyword(mock_get_requests: AsyncMock, mock_get_
 async def test_search_ebay_items_jan_code(mock_get_requests: AsyncMock, mock_get_token: AsyncMock) -> None:
 
     keywords = ["4902370550733"]
-    option = {"search_type": 1, "search_result_limit": 10}
+    option = {"search_type": SearchType.JAN_CODE, "search_result_limit": 10}
 
     results = await ebay.search_ebay_items(keywords, option)
 
@@ -110,7 +111,7 @@ async def test_search_ebay_items_jan_code(mock_get_requests: AsyncMock, mock_get
 async def test_search_ebay_items_no_data(mock_get_requests: AsyncMock, mock_get_token: AsyncMock) -> None:
 
     keywords = ["9999999999999"]
-    option = {"search_type": 1, "search_result_limit": 10}
+    option = {"search_type": SearchType.JAN_CODE, "search_result_limit": 10}
 
     results = await ebay.search_ebay_items(keywords, option)
 
@@ -130,7 +131,7 @@ async def test_search_ebay_items_raise_exception(mock_get_requests: AsyncMock, m
     mock_get_requests.return_value = mock_response
 
     keywords = ["9999999999999"]
-    option = {"search_type": 1, "search_result_limit": 10}
+    option = {"search_type": SearchType.JAN_CODE, "search_result_limit": 10}
 
     results = await ebay.search_ebay_items(keywords, option)
 

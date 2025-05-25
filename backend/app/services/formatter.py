@@ -4,7 +4,7 @@ import difflib
 import re
 from typing import Any
 
-from app.models.enums import Store
+from app.models.enums import SearchType, Store
 from app.models.product_data import ProductItem, WorkProductItem
 from app.services.code_counter import ThreadSafeCodeCounter
 from app.services.translator import translate_to_japanese
@@ -60,7 +60,7 @@ async def _group_product_data(
         dict: Combined product data.
     """
 
-    if option["search_type"] == 1:
+    if option["search_type"] == SearchType.JAN_CODE:
         # 商品の整形(JANコードあり)
         grouped_items = _group_by_jan_code(org_items, grouped_items, store)
     else:

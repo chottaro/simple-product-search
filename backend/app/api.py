@@ -3,7 +3,7 @@ import logging
 import traceback
 from typing import Any
 
-from app.models.enums import Store
+from app.models.enums import SearchType, Store, TranslateKeyword
 from app.models.product_data import ProductItem
 from app.search.ebay import search_ebay_items
 from app.search.rakuten import search_rakuten_items
@@ -33,21 +33,21 @@ app.add_middleware(
 @app.get("/search")
 async def search_products(
     keyword: str = Query(..., min_length=1),
-    search_type: int = 1,
-    translate_keyword: int = 1,
-    search_result_limit: int = 30,
-    similarity_threshold: float = 0.45,
+    search_type: SearchType = SearchType.JAN_CODE,
+    translate_keyword: TranslateKeyword = TranslateKeyword.TRANSLATE,
+    search_result_limit: int = Query(30, ge=1, lt=100),
+    similarity_threshold: float = Query(0.45, ge=0.0, lt=1.0),
 ) -> list[ProductItem]:
     """
     Search for products on Rakuten and eBay and return information grouped by JAN code or product name.
     Args:
-        keyword (str): Keywords for searching products from Rakuten and eBay.
-        search_type (int): Set the search method.
+        keyword (str): Keywords for searching products.
+        search_type (SearchType): Set the search method.
 
             1: Get JAN code by keyword search in Rakuten, and search Rakuten and eBay by JAN code.(Default)
 
             0: Search Rakuten and eBay by keyword.
-        translate_keyword (int): Specifies whether to translate keywords.
+        translate_keyword (TranslateKeyword): Specifies whether to translate keywords.
             If you specify 1, rakuten searches in Japanese and ebay searches in English.
 
             0: Do not translate.
@@ -64,7 +64,7 @@ async def search_products(
     """
 
     if not keyword.strip():
-        raise HTTPException(status_code=400, detail="The keyword is required.")
+        raise HTTPException(status_code=400, detail="keyword is required.")
 
     option: dict[str, Any] = {
         "search_type": search_type,
@@ -129,7 +129,7 @@ async def search_items(keyword_map, option, store: Store) -> list[dict[str, Any]
 
 def get_keyword_map(
     keyword, keyword_en, keyword_ja, combined_keyword, jan_codes
-) -> dict[Store, dict[int, dict[int, Any]]]:
+) -> dict[Store, dict[SearchType, dict[object, Any]]]:
     """
     Define keyword mappings for each platform, search type, and translation option.
     Args:
@@ -143,38 +143,38 @@ def get_keyword_map(
     """
     keyword_map = {
         Store.YAHOO: {
-            0: {
-                0: [keyword],
-                1: [keyword_ja],
+            SearchType.KEYWORD: {
+                TranslateKeyword.ORIGINAL: [keyword],
+                TranslateKeyword.TRANSLATE: [keyword_ja],
                 2: [combined_keyword],
             },
-            1: {
-                0: jan_codes,
-                1: jan_codes,
+            SearchType.JAN_CODE: {
+                TranslateKeyword.ORIGINAL: jan_codes,
+                TranslateKeyword.TRANSLATE: jan_codes,
                 2: jan_codes,
             },
         },
         Store.RAKUTEN: {
-            0: {
-                0: [keyword],
-                1: [keyword_ja],
+            SearchType.KEYWORD: {
+                TranslateKeyword.ORIGINAL: [keyword],
+                TranslateKeyword.TRANSLATE: [keyword_ja],
                 2: [combined_keyword],
             },
-            1: {
-                0: jan_codes,
-                1: jan_codes,
+            SearchType.JAN_CODE: {
+                TranslateKeyword.ORIGINAL: jan_codes,
+                TranslateKeyword.TRANSLATE: jan_codes,
                 2: jan_codes,
             },
         },
         Store.EBAY: {
-            0: {
-                0: [keyword],
-                1: [keyword_en],
+            SearchType.KEYWORD: {
+                TranslateKeyword.ORIGINAL: [keyword],
+                TranslateKeyword.TRANSLATE: [keyword_en],
                 2: [combined_keyword],
             },
-            1: {
-                0: jan_codes,
-                1: jan_codes,
+            SearchType.JAN_CODE: {
+                TranslateKeyword.ORIGINAL: jan_codes,
+                TranslateKeyword.TRANSLATE: jan_codes,
                 2: jan_codes,
             },
         },

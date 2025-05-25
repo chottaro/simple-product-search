@@ -6,6 +6,7 @@ import os
 from typing import Any
 
 import httpx
+from app.models.enums import SearchType
 from app.services.code_finder import find_jan_code
 from app.services.http_request import get_requests
 
@@ -53,7 +54,7 @@ async def search_rakuten_items(keywords: list[str], option: dict[str, Any]) -> l
     return items
 
 
-def parse_item(keyword: str, search_type: int, data: dict[str, Any]) -> list[dict[str, Any]]:
+def parse_item(keyword: str, search_type: SearchType, data: dict[str, Any]) -> list[dict[str, Any]]:
     try:
         items: list[dict[str, Any]] = []
         for item in data.get("Items", []):
@@ -67,7 +68,7 @@ def parse_item(keyword: str, search_type: int, data: dict[str, Any]) -> list[dic
 
             items.append(
                 {
-                    "jan_code": keyword if search_type == 1 else find_jan_code(jan_code_text_sources),
+                    "jan_code": keyword if search_type == SearchType.JAN_CODE else find_jan_code(jan_code_text_sources),
                     "product_name": item.get("itemName"),
                     "price": item.get("itemPrice"),
                     "url": item.get("itemUrl"),

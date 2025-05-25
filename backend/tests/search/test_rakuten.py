@@ -1,6 +1,7 @@
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
+from app.models.enums import SearchType
 from app.search import rakuten
 from requests.exceptions import HTTPError
 
@@ -34,7 +35,7 @@ from requests.exceptions import HTTPError
 async def test_search_rakuten_items_keyword_exists_code(mock_get_requests: AsyncMock) -> None:
 
     keywords = ["mock_keyword"]
-    option = {"search_type": 0, "search_result_limit": 2}
+    option = {"search_type": SearchType.KEYWORD, "search_result_limit": 2}
 
     results = await rakuten.search_rakuten_items(keywords, option)
 
@@ -82,7 +83,7 @@ async def test_search_rakuten_items_keyword_exists_code(mock_get_requests: Async
 async def test_search_rakuten_jan_code_exists_code(mock_get_requests: AsyncMock) -> None:
 
     keywords = ["49012347"]
-    option = {"search_type": 1, "search_result_limit": 2}
+    option = {"search_type": SearchType.JAN_CODE, "search_result_limit": 2}
 
     results = await rakuten.search_rakuten_items(keywords, option)
 
@@ -130,7 +131,7 @@ async def test_search_rakuten_jan_code_exists_code(mock_get_requests: AsyncMock)
 async def test_search_rakuten_items_keyword_not_exists_code(mock_get_requests: AsyncMock) -> None:
 
     keywords = ["mock_keyword"]
-    option = {"search_type": 0, "search_result_limit": 2}
+    option = {"search_type": SearchType.KEYWORD, "search_result_limit": 2}
 
     results = await rakuten.search_rakuten_items(keywords, option)
 
@@ -160,7 +161,7 @@ async def test_search_rakuten_items_keyword_not_exists_code(mock_get_requests: A
 async def test_search_rakuten_no_data(mock_get_requests: AsyncMock) -> None:
 
     keywords = ["mock_keyword"]
-    option = {"search_type": 1, "search_result_limit": 2}
+    option = {"search_type": SearchType.JAN_CODE, "search_result_limit": 2}
 
     results = await rakuten.search_rakuten_items(keywords, option)
 
@@ -178,7 +179,7 @@ async def test_search_rakuten_items_raise_exception(mock_get_requests: AsyncMock
     mock_get_requests.return_value = mock_response
 
     keywords = ["mock_keyword"]
-    option = {"search_type": 1, "search_result_limit": 2}
+    option = {"search_type": SearchType.JAN_CODE, "search_result_limit": 2}
 
     results = await rakuten.search_rakuten_items(keywords, option)
 

@@ -1,4 +1,5 @@
 import pytest
+from app.models.enums import SearchType
 from app.services import formatter
 
 
@@ -52,7 +53,7 @@ async def test_format_with_jan_code() -> None:
             "image_url": "https://image.com/6.jpg",
         },
     ]
-    option = {"search_type": 1}
+    option = {"search_type": SearchType.JAN_CODE}
 
     result = await formatter.format(yahoo_items, rakuten_items, ebay_items, option)
 
@@ -150,7 +151,7 @@ async def test_format_with_product_name() -> None:
             "image_url": "https://image.com/9.jpg",
         },
     ]
-    option = {"search_type": 0}
+    option = {"search_type": SearchType.KEYWORD}
 
     result = await formatter.format(yahoo_items, rakuten_items, ebay_items, option)
 

@@ -6,6 +6,7 @@ import os
 from typing import Any
 
 import httpx
+from app.models.enums import SearchType
 from app.services.http_request import get_requests
 
 YAHOO_APP_ID = os.getenv("YAHOO_APP_ID")
@@ -27,7 +28,7 @@ async def search_yahoo_items_by_keyword(keyword: str, option: dict[str, Any]) ->
 
     # 強制的にキーワード検索を行う
     option_for_keyword = option.copy()
-    option_for_keyword["search_type"] = 0
+    option_for_keyword["search_type"] = SearchType.KEYWORD
     return await _search_yahoo_items([keyword], option_for_keyword)
 
 
@@ -68,7 +69,7 @@ async def _search_yahoo_items(keywords: list[str], option: dict[str, Any]) -> li
                 # 429のエラーを発生させないためにsleepを入れる(0.5だと429発生)
                 await asyncio.sleep(0.6)
 
-                if option["search_type"] == 1:
+                if option["search_type"] == SearchType.JAN_CODE:
                     search_params["jan_code"] = keyword
                 else:
                     search_params["query"] = keyword

@@ -7,6 +7,7 @@ from typing import Any
 
 import httpx
 import requests
+from app.models.enums import SearchType
 from app.services.http_request import get_requests
 
 EBAY_APP_ID = os.getenv("EBAY_APP_ID")
@@ -54,13 +55,13 @@ async def search_ebay_items(keywords: list[str], option: dict[str, Any]) -> list
     return items
 
 
-def parse_item(keyword: str, search_type: int, data: dict[str, Any]) -> list[dict[str, Any]]:
+def parse_item(keyword: str, search_type: SearchType, data: dict[str, Any]) -> list[dict[str, Any]]:
     try:
         items: list[dict[str, Any]] = []
         for item in data.get("itemSummaries", []):
             items.append(
                 {
-                    "jan_code": keyword if search_type == 1 else "",
+                    "jan_code": keyword if search_type == SearchType.JAN_CODE else "",
                     "product_name": item.get("title"),
                     "price": float(item.get("price", {}).get("value", 0)),
                     "url": item.get("itemWebUrl"),

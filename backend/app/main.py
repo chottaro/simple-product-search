@@ -4,11 +4,11 @@ import asyncio
 import logging
 import sys
 
-from dotenv import load_dotenv
-
 from app.api import search_products
+from app.models.enums import SearchType, TranslateKeyword
 from app.models.product_data import ProductItem
 from app.services.save import save_to_json
+from dotenv import load_dotenv
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 async def search(keyword: str) -> None:
     load_dotenv()
 
-    search_type: int = 1
-    translate_keyword: int = 1
+    search_type: SearchType = SearchType.JAN_CODE
+    translate_keyword: TranslateKeyword = TranslateKeyword.TRANSLATE
     search_result_limit: int = 30
     similarity_threshold: float = 0.45
 
