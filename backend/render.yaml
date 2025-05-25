@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: simple-product-api
+    env: python
+    buildCommand: ""
+    startCommand: gunicorn main:app --bind 0.0.0.0:$PORT
+    plan: free
+    envVars:
+      - key: FLASK_ENV
+        value: production
