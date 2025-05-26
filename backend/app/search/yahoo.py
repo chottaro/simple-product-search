@@ -62,6 +62,7 @@ async def _search_yahoo_items(keywords: list[str], option: dict[str, Any]) -> li
         search_params: dict[str, Any] = {
             "appid": YAHOO_APP_ID,
             "results": option["search_result_limit"],
+            "in_stock": True,
         }
 
         for keyword in keywords:
