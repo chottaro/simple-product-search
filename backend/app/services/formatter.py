@@ -2,7 +2,7 @@
 
 import difflib
 import re
-from typing import Any
+from typing import Any, Optional
 
 from app.models.enums import SearchType, Store
 from app.models.product_data import ProductItem, WorkProductItem
@@ -86,42 +86,12 @@ def _group_by_jan_code(
 
     for item in (item for item in org_items if item.get("jan_code")):
         jan_code = item["jan_code"]
-        if jan_code in grouped_items:
-            grouped_items[jan_code]["work_price"][store.value].append(item.get("price"))
-            if not grouped_items[jan_code]["product_name"][store.value]:
-                grouped_items[jan_code]["product_name"][store.value] = item.get("product_name")
-                grouped_items[jan_code]["target_price"][store.value] = item.get("price")
-                grouped_items[jan_code]["url"][store.value] = item.get("url")
-                grouped_items[jan_code]["image_url"][store.value] = item.get("image_url")
 
-        else:
-            grouped_items[jan_code] = {
-                "product_name": {
-                    "yahoo": item.get("product_name") if store == Store.YAHOO else None,
-                    "rakuten": item.get("product_name") if store == Store.RAKUTEN else None,
-                    "ebay": item.get("product_name") if store == Store.EBAY else None,
-                },
-                "work_price": {
-                    "yahoo": [item.get("price")] if store == Store.YAHOO else [],
-                    "rakuten": [item.get("price")] if store == Store.RAKUTEN else [],
-                    "ebay": [item.get("price")] if store == Store.EBAY else [],
-                },
-                "target_price": {
-                    "yahoo": item.get("price") if store == Store.YAHOO else None,
-                    "rakuten": item.get("price") if store == Store.RAKUTEN else None,
-                    "ebay": item.get("price") if store == Store.EBAY else None,
-                },
-                "url": {
-                    "yahoo": item.get("url") if store == Store.YAHOO else None,
-                    "rakuten": item.get("url") if store == Store.RAKUTEN else None,
-                    "ebay": item.get("url") if store == Store.EBAY else None,
-                },
-                "image_url": {
-                    "yahoo": item.get("image_url") if store == Store.YAHOO else None,
-                    "rakuten": item.get("image_url") if store == Store.RAKUTEN else None,
-                    "ebay": item.get("image_url") if store == Store.EBAY else None,
-                },
-            }
+        # 存在しなければ新規作成
+        if jan_code not in grouped_items:
+            grouped_items[jan_code] = _create_initial_work_product_item()
+
+        _update_item_in_grouped_items(grouped_items[jan_code], item, store)
 
     return grouped_items
 
@@ -145,64 +115,93 @@ async def _group_by_product_name(
     """
 
     for item in (item for item in org_items):
-        current_product_name = item.get("product_name", "")
-        translate_product_name = current_product_name
+        current_product_name_from_item = item.get("product_name", "")
+        product_name_to_use_in_update = current_product_name_from_item
 
         # ebayの場合は商品名を日本語に変換
         if store == Store.EBAY:
-            translate_product_name = await translate_to_japanese(current_product_name)
+            product_name_to_use_in_update = await translate_to_japanese(current_product_name_from_item)
 
         match_flg: bool = False
-        for jan_code in grouped_items:
+        for jan_code in list(grouped_items.keys()):
             yahoo_name = grouped_items[jan_code]["product_name"][Store.YAHOO.value]
             rakuten_name = grouped_items[jan_code]["product_name"][Store.RAKUTEN.value]
             ebay_name = grouped_items[jan_code]["product_name"][Store.EBAY.value]
             target_name = str(yahoo_name or rakuten_name or ebay_name)
 
-            if _is_similarity(target_name, current_product_name, translate_product_name, option):
-                # ファイル名の類似度が規定値を超えた場合は同一商品とみなす
-                grouped_items[jan_code]["work_price"][store.value].append(item.get("price"))
-                if not grouped_items[jan_code]["product_name"][store.value]:
-                    grouped_items[jan_code]["product_name"][store.value] = current_product_name
-                    grouped_items[jan_code]["target_price"][store.value] = item.get("price")
-                    grouped_items[jan_code]["url"][store.value] = item.get("url")
-                    grouped_items[jan_code]["image_url"][store.value] = item.get("image_url")
-
+            if _is_similarity(target_name, current_product_name_from_item, product_name_to_use_in_update, option):
+                # 類似度が高い場合、同一商品とみなし既存の項目を更新
+                _update_item_in_grouped_items(
+                    grouped_items[jan_code],
+                    item,
+                    store,
+                )
                 match_flg = True
                 break
 
         if not match_flg:
             # 1件もマッチしなかった場合は別途追加する
-            code = str(item.get("jan_code") if item.get("jan_code") else "No-" + counter.get_next())
-            grouped_items[code] = {
-                "product_name": {
-                    "yahoo": item.get("product_name") if store == Store.YAHOO else None,
-                    "rakuten": item.get("product_name") if store == Store.RAKUTEN else None,
-                    "ebay": item.get("product_name") if store == Store.EBAY else None,
-                },
-                "work_price": {
-                    "yahoo": [item.get("price")] if store == Store.YAHOO else [],
-                    "rakuten": [item.get("price")] if store == Store.RAKUTEN else [],
-                    "ebay": [item.get("price")] if store == Store.EBAY else [],
-                },
-                "target_price": {
-                    "yahoo": item.get("price") if store == Store.YAHOO else None,
-                    "rakuten": item.get("price") if store == Store.RAKUTEN else None,
-                    "ebay": item.get("price") if store == Store.EBAY else None,
-                },
-                "url": {
-                    "yahoo": item.get("url") if store == Store.YAHOO else None,
-                    "rakuten": item.get("url") if store == Store.RAKUTEN else None,
-                    "ebay": item.get("url") if store == Store.EBAY else None,
-                },
-                "image_url": {
-                    "yahoo": item.get("image_url") if store == Store.YAHOO else None,
-                    "rakuten": item.get("image_url") if store == Store.RAKUTEN else None,
-                    "ebay": item.get("image_url") if store == Store.EBAY else None,
-                },
-            }
+            code = str(item.get("jan_code") if item.get("jan_code") else "No-" + str(counter.get_next()))
+
+            grouped_items[code] = _create_initial_work_product_item()
+            _update_item_in_grouped_items(
+                grouped_items[code],
+                item,
+                store,
+            )
 
     return grouped_items
+
+
+def _update_item_in_grouped_items(
+    target_grouped_item: WorkProductItem,
+    source_item_data: dict[str, Any],
+    store: Store,
+) -> None:
+    """
+    grouped_items内の既存または新規のWorkProductItemの情報を更新します。
+    最安値のロジックを含みます。
+
+    Args:
+        target_grouped_item (WorkProductItem): 更新対象となるgrouped_items内のWorkProductItemオブジェクト。
+        source_item_data (dict): 更新に使用する元のアイテムデータ（org_itemsの各item）。
+        store_value (str): 現在処理しているストアの文字列値（"yahoo", "rakuten"など）。
+        current_product_name (Optional[str]): _group_by_product_nameからの呼び出し時に、
+                                                item.get("product_name")の代わりに設定したい商品名。
+                                                Noneの場合はsource_item_dataから取得。
+    """
+    current_price_float = _get_safe_price(source_item_data.get("price"))
+    target_grouped_item["work_price"][store.value].append(current_price_float)
+
+    existing_target_price_for_store = target_grouped_item["target_price"][store.value]
+
+    # 最安値の更新ロジック
+    # current_price_float が有効な数値である場合に、target_priceと比較して更新
+    if current_price_float is not None:
+        if existing_target_price_for_store is None or current_price_float < existing_target_price_for_store:
+            target_grouped_item["product_name"][store.value] = source_item_data.get("product_name")
+            target_grouped_item["target_price"][store.value] = current_price_float
+            target_grouped_item["url"][store.value] = source_item_data.get("url")
+            target_grouped_item["image_url"][store.value] = source_item_data.get("image_url")
+
+
+def _get_safe_price(raw_price):
+    try:
+        if raw_price is not None:
+            return float(raw_price)
+    except (ValueError, TypeError):
+        pass
+    return None
+
+
+def _create_initial_work_product_item():
+    return {
+        "product_name": {"yahoo": None, "rakuten": None, "ebay": None},
+        "work_price": {"yahoo": [], "rakuten": [], "ebay": []},
+        "target_price": {"yahoo": None, "rakuten": None, "ebay": None},
+        "url": {"yahoo": None, "rakuten": None, "ebay": None},
+        "image_url": {"yahoo": None, "rakuten": None, "ebay": None},
+    }
 
 
 def _is_similarity(org_text: str, target_text1: str, target_text2: str, option: dict[str, Any]) -> bool:
